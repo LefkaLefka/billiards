@@ -4,12 +4,12 @@
 public ref class Game
 {
 public: 
-	// if gaming
 	bool IsGame;
 	bool IsProgress;
 	Cue* Cue;
 	bool IsCuePressed;
 	CPoint* PointOnCue;
+	float LengthForSpeed;
 
 	Game()
 	{

@@ -11,11 +11,11 @@ public:
 
 	Cue(CPoint* center, CPoint* mouceCoord, float startCue)
 	{	
-		CueStart = Helper::StartCue(center->X, center->Y,
+		CueStart = Helper::PointFromLength(center->X, center->Y,
 			mouceCoord->X, mouceCoord->Y,
 			startCue);
 
-		CueEnd = Helper::StartCue(CueStart->X, CueStart->Y,
+		CueEnd = Helper::PointFromLength(CueStart->X, CueStart->Y,
 			mouceCoord->X, mouceCoord->Y,
 			(float)SData::LENGTH_CUE);
 	}

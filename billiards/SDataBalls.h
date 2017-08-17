@@ -13,13 +13,19 @@ public:
 	SDataBalls()
 	{
 		Balls[0] = new Ball(*WhiteBallPosition, false, System::Drawing::Color::White);
+		Balls[0]->Speed = 0;
+		Balls[0]->End = nullptr;
 
 		array<CPoint*>^ _points = MixCoordinates();
 		array<System::Drawing::Color>^ colors = Colors();
 		array<bool>^ strips = Strips();
 
 		for (int i = 0; i < SData::BALLS_COUNT - 1; ++i)
+		{
 			Balls[i + 1] = new Ball(*_points[i], strips[i], colors[i]);
+			Balls[i + 1]->Speed = 0;
+			Balls[i + 1]->End = nullptr;
+		}
 	};
 
 private:

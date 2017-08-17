@@ -153,7 +153,7 @@ private: System::Void buttonNewGame_Click(System::Object^  sender, System::Event
 
 	ballsData = gcnew SDataBalls();
 	game = gcnew Game();
-	DrawHoles();
+	DrawHolesAndBorders();
 
 	if (gameThread != nullptr)
 	{
@@ -169,15 +169,10 @@ private: System::Void buttonNewGame_Click(System::Object^  sender, System::Event
 }
 private: System::Void GameCycle()
 {
-	//ballsData->Balls[15]->Speed = 1;
-	//ballsData->Balls[14]->Speed = 5.5;
-
 	while (game->IsGame)
 	{
 		Render();	
-
-		//ballsData->Balls[15]->X -= ballsData->Balls[15]->Speed;
-		//ballsData->Balls[14]->X -= ballsData->Balls[14]->Speed;
+		Helper::ReCalculate(ballsData->Balls);
 
 		System::Threading::Thread::Sleep(5);
 	}
@@ -216,11 +211,11 @@ private: System::Void Render()
 	pictureBox->Invalidate();
 	image = imageBase;
 }
-private: System::Void DrawHoles()
+private: System::Void DrawHolesAndBorders()
 {
 	Graphics^ graphics = Graphics::FromImage(image);
 	// Draw canvas border
-	Pen^ penBorder = gcnew Pen(System::Drawing::Color::FromArgb(0, 139, 69), 50);
+	Pen^ penBorder = gcnew Pen(System::Drawing::Color::FromArgb(0, 139, 69), (float)SData::THICKNESS_BORDER);
 	graphics->DrawLine(penBorder, 0, 0, SData::WIDHT_CANVAS, 0);
 	graphics->DrawLine(penBorder, 0, SData::HEIGTH_CANVAS, SData::WIDHT_CANVAS, SData::HEIGTH_CANVAS);
 	graphics->DrawLine(penBorder, 0, 0, 0, SData::HEIGTH_CANVAS);
@@ -247,11 +242,13 @@ private: System::Void MainForm_FormClosing(System::Object^  sender, System::Wind
 private: System::Void pictureBox_MouseMove(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
 	if (game == nullptr)
 		return;
-
+	
 	game->IsProgress = true;
 
 	if (game->IsProgress == false)
 		return;
+
+	textBox1->Text = e->X.ToString() + " " + e->Y.ToString();
 
 	// перераховуємо початок для кия
 	float buffStartCue = SData::START_CUE;
@@ -265,18 +262,18 @@ private: System::Void pictureBox_MouseMove(System::Object^  sender, System::Wind
 			buffStartCue = (buffStartCue > SData::START_CUE && buffStartCue < SData::MAX_CUE_LENGTH) ? buffStartCue :
 				buffStartCue >= SData::MAX_CUE_LENGTH ? (float)SData::MAX_CUE_LENGTH : (float)SData::START_CUE;
 
-			game->PointOnCue = Helper::StartCue(ballsData->Balls[0]->Center->X, ballsData->Balls[0]->Center->Y,
+			game->PointOnCue = Helper::PointFromLength(ballsData->Balls[0]->Center->X, ballsData->Balls[0]->Center->Y,
 				(float)e->X, (float)e->Y,
 				buffStartCue);
+
+			game->LengthForSpeed = buffStartCue;
 		}
-	
-	ballsData->Balls[0]->Speed = Helper::SpeedFromCue(buffStartCue);
 
 	// якщо ми не в кулі
 	if ((e->X - ballsData->Balls[0]->Center->X) * (e->X - ballsData->Balls[0]->Center->X) +
 		(e->Y - ballsData->Balls[0]->Center->Y) * (e->Y - ballsData->Balls[0]->Center->Y) >
 		buffStartCue * buffStartCue)
-		game->Cue = new Cue(ballsData->Balls[0]->Center, new CPoint((float)e->X, (float)e->Y), buffStartCue);
+		game->Cue = new Cue(ballsData->Balls[0]->Center, new CPoint((float)e->X, (float)e->Y), buffStartCue);	
 }
 private: System::Void pictureBox_MouseDown(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
 	if (game == nullptr)
@@ -297,6 +294,9 @@ private: System::Void pictureBox_MouseUp(System::Object^  sender, System::Window
 
 	game->IsCuePressed = false;
 	game->PointOnCue = nullptr;
+	
+	ballsData->Balls[0]->Speed = Helper::SpeedFromCue(game->LengthForSpeed);
+	ballsData->Balls[0]->End = Helper::EndOfLine(game->Cue->CueStart, ballsData->Balls[0]->Center, ballsData->Balls[0]->End);
 }
 };
 }

@@ -6,6 +6,8 @@ public:
 	static const int HEIGTH_CANVAS = 400;
 	static const int WIDHT_CANVAS = 700;
 	static const int DIAMETER_HOLE = 40;
+	static const int THICKNESS_BORDER = 50;
+
 	static const int DIAMETER_BALL = 30;
 	static const int RADIUS_BALL = 15;
 	static const int BALLS_COUNT = 16;
@@ -15,12 +17,10 @@ public:
 	static const int MAX_CUE_LENGTH = 50;
 
 	static const float MIN_SPEED()
-	{ return 5;	}
+	{ return 0.1f;	}
 	static const float MAX_SPEED()
-	{ return 5;	}
+	{ return 4.0f;	}
 
 	static const System::Drawing::Color STRIP_COLOR()
-	{
-		return System::Drawing::Color::White;
-	};
+	{ return System::Drawing::Color::White; }
 };

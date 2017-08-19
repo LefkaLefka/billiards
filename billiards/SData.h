@@ -16,10 +16,14 @@ public:
 	static const int LENGTH_CUE = 70;
 	static const int MAX_CUE_LENGTH = 50;
 
+	static const float DECELERATION()
+	{ return 0.025; }
 	static const float MIN_SPEED()
-	{ return 0.1f;	}
+	{ return 0.1; }
 	static const float MAX_SPEED()
-	{ return 4.0f;	}
+	{ return 7; }
+	static const float SOME()
+	{ return 0.9977; }
 
 	static const System::Drawing::Color STRIP_COLOR()
 	{ return System::Drawing::Color::White; }

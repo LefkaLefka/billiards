@@ -124,6 +124,7 @@ private:
 		this->Controls->Add(this->pictureBox);
 		this->Controls->Add(this->buttonNewGame);
 		this->Name = L"MainForm";
+		this->StartPosition = System::Windows::Forms::FormStartPosition::CenterScreen;
 		this->Text = L"billiards";
 		this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &MainForm::MainForm_FormClosing);
 		this->Load += gcnew System::EventHandler(this, &MainForm::MainForm_Load);
@@ -166,6 +167,8 @@ private: System::Void buttonNewGame_Click(System::Object^  sender, System::Event
 	gameThread = gcnew System::Threading::Thread(
 		gcnew System::Threading::ThreadStart(this, &MainForm::GameCycle));
 	gameThread->Start();
+
+	game->IsProgress = true;
 }
 private: System::Void GameCycle()
 {
@@ -182,7 +185,7 @@ private: System::Void Render()
 	Bitmap^ imageBase = gcnew Bitmap(imageHelper);
 	Graphics^ graphics = Graphics::FromImage(imageBase);
 
-	for (int i = 0; i < SData::BALLS_COUNT; i++)
+	for (int i = 0; i < SData::BALLS_COUNT; ++i)
 	{
 		if (ballsData->Balls[i]->IsStriped)
 			graphics->FillEllipse(
@@ -200,7 +203,7 @@ private: System::Void Render()
 				(float)SData::DIAMETER_BALL);
 	}
 
-	if (game->IsProgress)
+	if (game->IsProgress && game->Cue != NULL)
 	{
 		Pen^ penCue = gcnew Pen(System::Drawing::Color::Brown, 5);
 
@@ -243,14 +246,9 @@ private: System::Void pictureBox_MouseMove(System::Object^  sender, System::Wind
 	if (game == nullptr)
 		return;
 	
-	game->IsProgress = true;
-
 	if (game->IsProgress == false)
 		return;
 
-	textBox1->Text = e->X.ToString() + " " + e->Y.ToString();
-
-	// перераховуємо початок для кия
 	float buffStartCue = SData::START_CUE;
 
 	if (game->IsCuePressed)
@@ -262,7 +260,7 @@ private: System::Void pictureBox_MouseMove(System::Object^  sender, System::Wind
 			buffStartCue = (buffStartCue > SData::START_CUE && buffStartCue < SData::MAX_CUE_LENGTH) ? buffStartCue :
 				buffStartCue >= SData::MAX_CUE_LENGTH ? (float)SData::MAX_CUE_LENGTH : (float)SData::START_CUE;
 
-			game->PointOnCue = Helper::PointFromLength(ballsData->Balls[0]->Center->X, ballsData->Balls[0]->Center->Y,
+			game->PointOnCue = Helper::PointFromLength(ballsData->Balls[0]->Center()->X, ballsData->Balls[0]->Center()->Y,
 				(float)e->X, (float)e->Y,
 				buffStartCue);
 
@@ -270,10 +268,10 @@ private: System::Void pictureBox_MouseMove(System::Object^  sender, System::Wind
 		}
 
 	// якщо ми не в кулі
-	if ((e->X - ballsData->Balls[0]->Center->X) * (e->X - ballsData->Balls[0]->Center->X) +
-		(e->Y - ballsData->Balls[0]->Center->Y) * (e->Y - ballsData->Balls[0]->Center->Y) >
+	if ((e->X - ballsData->Balls[0]->Center()->X) * (e->X - ballsData->Balls[0]->Center()->X) +
+		(e->Y - ballsData->Balls[0]->Center()->Y) * (e->Y - ballsData->Balls[0]->Center()->Y) >
 		buffStartCue * buffStartCue)
-		game->Cue = new Cue(ballsData->Balls[0]->Center, new CPoint((float)e->X, (float)e->Y), buffStartCue);	
+		game->Cue = new Cue(ballsData->Balls[0]->Center(), new CPoint((float)e->X, (float)e->Y), buffStartCue);
 }
 private: System::Void pictureBox_MouseDown(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
 	if (game == nullptr)
@@ -292,11 +290,12 @@ private: System::Void pictureBox_MouseUp(System::Object^  sender, System::Window
 	if (game->IsProgress == false)
 		return;
 
+	game->IsProgress = false;
 	game->IsCuePressed = false;
 	game->PointOnCue = nullptr;
 	
 	ballsData->Balls[0]->Speed = Helper::SpeedFromCue(game->LengthForSpeed);
-	ballsData->Balls[0]->End = Helper::EndOfLine(game->Cue->CueStart, ballsData->Balls[0]->Center, ballsData->Balls[0]->End);
+	ballsData->Balls[0]->End = Helper::EndOfLine(game->Cue->CueStart, ballsData->Balls[0]->Center(), ballsData->Balls[0]->End);
 }
 };
 }

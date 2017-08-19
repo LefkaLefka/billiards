@@ -14,143 +14,270 @@ public:
 
 		return new CPoint(x, y);
 	}
+	
 	static float SpeedFromCue(float length)
 	{
 		return length * (SData::MAX_SPEED() - SData::MIN_SPEED()) / (SData::MAX_CUE_LENGTH - SData::START_CUE);
 	}
+	
 	static void ReCalculate(array<Ball*>^ balls)
 	{
-		//Balls[0]->X += Balls[0]->Speed;
-		if (balls[0]->End != nullptr)
-		{
-			balls[0]->X = balls[0]->End->X;
-			balls[0]->Y = balls[0]->End->Y;
-		}
-		
+		for (int i = -0; i < SData::BALLS_COUNT; ++i)
+			if (balls[i]->End != nullptr && 
+				balls[i]->Speed > 0 && 
+				balls[i]->Length >= 0)
+			{
+				CPoint* buff = PointFromLength(balls[i]->Center()->X, balls[i]->Center()->Y, balls[i]->End->X, balls[i]->End->Y, balls[i]->Length);
+				
+				// In some cases, we get the result with "-nan(ind)"
+				// I don't know why it happens
+				// But the next line fix this error
+				if (!(buff->X != buff->X || buff->Y != buff->Y))
+				{
+					balls[i]->X = buff->X - SData::RADIUS_BALL;
+					balls[i]->Y = buff->Y - SData::RADIUS_BALL;
 
-		//
-		//
-		//
-		//
-		//
-		//
+					balls[i]->Length = balls[i]->Speed;
+					balls[i]->Speed -= SData::DECELERATION();
+
+					// ball in hole
+					CalculateBallRepulsion(balls);
+					CalculateBorderRepulsion(balls[i]);
+				}
+			}
+			else
+			{
+				balls[i]->Speed = 0;
+				balls[i]->Length = 0;
+				balls[i]->End = nullptr;
+			}
 	}
-	static CPoint* EndOfLine(CPoint* startCue, CPoint* ballCenter, CPoint* ballEnd)
+
+	static CPoint* EndOfLine(CPoint* startPoint, CPoint* intermediatePoint, CPoint* ballEnd)
 	{
 		float x, y, t;
 
-		if (startCue->X < ballCenter->X)
+		if (startPoint->X < intermediatePoint->X)
 		{
-			if (startCue->Y > ballCenter->Y)
+			if (startPoint->Y > intermediatePoint->Y)
 			{
-				if ((startCue->X - ballCenter->X) / (SData::WIDHT_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0 - ballCenter->X) >
-					(startCue->Y - ballCenter->Y) / (SData::THICKNESS_BORDER / 2.0 - ballCenter->Y))
-				{
-					y = SData::THICKNESS_BORDER / 2.0;
-					t = (y - startCue->Y) / (ballCenter->Y - startCue->Y);
-					x = startCue->X + (ballCenter->X - startCue->X) * t - SData::RADIUS_BALL;
-				}
-				else
-				{
-					x = SData::WIDHT_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0;
-					t = (x - startCue->X) / (ballCenter->X - startCue->X);
-					y = startCue->Y + (ballCenter->Y - startCue->Y) * t - SData::RADIUS_BALL;
-				}
-			}
-			if (startCue->Y < ballCenter->Y)
-			{
-				if ((startCue->X - ballCenter->X) / (SData::WIDHT_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0 - ballCenter->X) >
-					(startCue->Y - ballCenter->Y) / (SData::HEIGTH_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0 - ballCenter->Y))
-				{
-					y = SData::HEIGTH_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0;
-					t = (y - startCue->Y) / (ballCenter->Y - startCue->Y);
-					x = startCue->X + (ballCenter->X - startCue->X) * t - SData::RADIUS_BALL;
-				}
-				else
-				{
-					x = SData::WIDHT_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0;
-					t = (x - startCue->X) / (ballCenter->X - startCue->X);
-					y = startCue->Y + (ballCenter->Y - startCue->Y) * t - SData::RADIUS_BALL;
-				}
-			}				
-		}
+				x = SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+				t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+				y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
 
-		if (startCue->X > ballCenter->X)
-		{
-			if (startCue->Y > ballCenter->Y)
-			{
-				if ((startCue->X - ballCenter->X) / (SData::THICKNESS_BORDER / 2.0 - ballCenter->X) >
-					(startCue->Y - ballCenter->Y) / (SData::THICKNESS_BORDER / 2.0 - ballCenter->Y))
+				if (y < SData::THICKNESS_BORDER / 2.0) 
 				{
 					y = SData::THICKNESS_BORDER / 2.0;
-					t = (y - startCue->Y) / (ballCenter->Y - startCue->Y);
-					x = startCue->X + (ballCenter->X - startCue->X) * t - SData::RADIUS_BALL;
-				}
-				else
-				{
-					x = SData::THICKNESS_BORDER / 2.0;
-					t = (x - startCue->X) / (ballCenter->X - startCue->X);
-					y = startCue->Y + (ballCenter->Y - startCue->Y) * t - SData::RADIUS_BALL;
+					t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+					x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
 				}
 			}
-			if (startCue->Y < ballCenter->Y)
+			if (startPoint->Y < intermediatePoint->Y)
 			{
-				if ((startCue->X - ballCenter->X) / (SData::THICKNESS_BORDER / 2.0 - ballCenter->X) >
-					(startCue->Y - ballCenter->Y) / (SData::HEIGTH_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0 - ballCenter->Y))
+				y = SData::HEIGTH_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+				t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+				x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
+				
+				if (x > SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0)
 				{
-					y = SData::HEIGTH_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0;
-					t = (y - startCue->Y) / (ballCenter->Y - startCue->Y);
-					x = startCue->X + (ballCenter->X - startCue->X) * t - SData::RADIUS_BALL;
+					x = SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+					t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+					y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
 				}
-				else
+			}
+			if (startPoint->Y == intermediatePoint->Y)
+			{
+				if (startPoint->X >= intermediatePoint->X)
 				{
 					x = SData::THICKNESS_BORDER / 2.0;
-					t = (x - startCue->X) / (ballCenter->X - startCue->X);
-					y = startCue->Y + (ballCenter->Y - startCue->Y) * t - SData::RADIUS_BALL;
+					t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+					y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+				}
+				if (startPoint->X < intermediatePoint->X)
+				{
+					x = SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+					t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+					y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
 				}
 			}
 		}
 
-		if (startCue->X == ballCenter->X)
+		if (startPoint->X > intermediatePoint->X)
 		{
-			if (startCue->Y > ballCenter->Y)
+			if (startPoint->Y > intermediatePoint->Y)
 			{
 				y = SData::THICKNESS_BORDER / 2.0;
-				t = (y - startCue->Y) / (ballCenter->Y - startCue->Y);
-				x = startCue->X + (ballCenter->X - startCue->X) * t - SData::RADIUS_BALL;
+				t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+				x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
+
+				if (x < SData::THICKNESS_BORDER / 2.0)
+				{
+					x = SData::THICKNESS_BORDER / 2.0;
+					t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+					y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+				}
 			}
-			if (startCue->Y < ballCenter->Y)
+			if (startPoint->Y < intermediatePoint->Y)
 			{
-				y = SData::HEIGTH_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0;
-				t = (y - startCue->Y) / (ballCenter->Y - startCue->Y);
-				x = startCue->X + (ballCenter->X - startCue->X) * t - SData::RADIUS_BALL;
+				y = SData::HEIGTH_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+				t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+				x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
+
+				if (x < SData::THICKNESS_BORDER / 2.0)
+				{
+					x = SData::THICKNESS_BORDER / 2.0;
+					t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+					y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+				}
+			}
+			if (startPoint->Y == intermediatePoint->Y)
+			{
+				if (startPoint->X >= intermediatePoint->X)
+				{
+					x = SData::THICKNESS_BORDER / 2.0;
+					t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+					y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+				}
+				if (startPoint->X < intermediatePoint->X)
+				{
+					x = SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+					t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+					y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+				}
 			}
 		}
 
-		if (startCue->Y == ballCenter->Y)
+		if (startPoint->X == intermediatePoint->X)
 		{
-			if (startCue->X > ballCenter->X)
+			if (startPoint->Y >= intermediatePoint->Y)
 			{
-				x = SData::THICKNESS_BORDER / 2.0;
-				t = (x - startCue->X) / (ballCenter->X - startCue->X);
-				y = startCue->Y + (ballCenter->Y - startCue->Y) * t - SData::RADIUS_BALL;
+				y = SData::THICKNESS_BORDER / 2.0;
+				t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+				x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
 			}
-			if (startCue->X < ballCenter->X)
+			if (startPoint->Y < intermediatePoint->Y)
 			{
-				x = SData::WIDHT_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0;
-				t = (x - startCue->X) / (ballCenter->X - startCue->X);
-				y = startCue->Y + (ballCenter->Y - startCue->Y) * t - SData::RADIUS_BALL;
+				y = SData::HEIGTH_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+				t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+				x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
 			}
 		}
 
-		if (x >= SData::THICKNESS_BORDER / 2.0 && 
-			x <= SData::WIDHT_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0 &&
-			y >= SData::THICKNESS_BORDER / 2.0 &&
-			y <= SData::HEIGTH_CANVAS - SData::DIAMETER_BALL - SData::THICKNESS_BORDER / 2.0)
-			return new CPoint(x, y);
+		//old end of line
+		//if (startPoint->X < intermediatePoint->X)
+		//{
+		//	if (startPoint->Y > intermediatePoint->Y)
+		//	{
+		//		if ((startPoint->X - intermediatePoint->X) / (SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0 - intermediatePoint->X) >
+		//			(startPoint->Y - intermediatePoint->Y) / (SData::THICKNESS_BORDER / 2.0 - intermediatePoint->Y))
+		//		{
+		//			y = SData::THICKNESS_BORDER / 2.0;
+		//			t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+		//			x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
+		//		}
+		//		else
+		//		{
+		//			x = SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+		//			t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+		//			y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+		//		}
+		//	}
+		//	if (startPoint->Y < intermediatePoint->Y)
+		//	{
+		//		if ((startPoint->X - intermediatePoint->X) / (SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0 - intermediatePoint->X) >
+		//			(startPoint->Y - intermediatePoint->Y) / (SData::HEIGTH_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0 - intermediatePoint->Y))
+		//		{
+		//			y = SData::HEIGTH_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+		//			t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+		//			x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
+		//		}
+		//		else
+		//		{
+		//			x = SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+		//			t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+		//			y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+		//		}
+		//	}
+		//}
+		//
+		//if (startPoint->X > intermediatePoint->X)
+		//{
+		//	if (startPoint->Y > intermediatePoint->Y)
+		//	{
+		//		if ((startPoint->X - intermediatePoint->X) / (SData::THICKNESS_BORDER / 2.0 - intermediatePoint->X) >
+		//			(startPoint->Y - intermediatePoint->Y) / (SData::THICKNESS_BORDER / 2.0 - intermediatePoint->Y))
+		//		{
+		//			y = SData::THICKNESS_BORDER / 2.0;
+		//			t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+		//			x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
+		//		}
+		//		else
+		//		{
+		//			x = SData::THICKNESS_BORDER / 2.0;
+		//			t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+		//			y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+		//		}
+		//	}
+		//	if (startPoint->Y < intermediatePoint->Y)
+		//	{
+		//		if ((startPoint->X - intermediatePoint->X) / (SData::THICKNESS_BORDER / 2.0 - intermediatePoint->X) >
+		//			(startPoint->Y - intermediatePoint->Y) / (SData::HEIGTH_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0 - intermediatePoint->Y))
+		//		{
+		//			y = SData::HEIGTH_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+		//			t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+		//			x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
+		//		}
+		//		else
+		//		{
+		//			x = SData::THICKNESS_BORDER / 2.0;
+		//			t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+		//			y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+		//		}
+		//	}
+		//}
+		//
+		//if (startPoint->X == intermediatePoint->X)
+		//{
+		//	if (startPoint->Y > intermediatePoint->Y)
+		//	{
+		//		y = SData::THICKNESS_BORDER / 2.0;
+		//		t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+		//		x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
+		//	}
+		//	if (startPoint->Y < intermediatePoint->Y)
+		//	{
+		//		y = SData::HEIGTH_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+		//		t = (y - startPoint->Y) / (intermediatePoint->Y - startPoint->Y);
+		//		x = startPoint->X + (intermediatePoint->X - startPoint->X) * t - SData::RADIUS_BALL;
+		//	}
+		//}
+		//
+		//if (startPoint->Y == intermediatePoint->Y)
+		//{
+		//	if (startPoint->X > intermediatePoint->X)
+		//	{
+		//		x = SData::THICKNESS_BORDER / 2.0;
+		//		t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+		//		y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+		//	}
+		//	if (startPoint->X < intermediatePoint->X)
+		//	{
+		//		x = SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0;
+		//		t = (x - startPoint->X) / (intermediatePoint->X - startPoint->X);
+		//		y = startPoint->Y + (intermediatePoint->Y - startPoint->Y) * t - SData::RADIUS_BALL;
+		//	}
+		//}
 
-		return ballEnd;
+		/*if (!(x >= SData::THICKNESS_BORDER / 2.0 && 
+			x <= SData::WIDHT_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0 &&
+			y >= SData::THICKNESS_BORDER / 2.0 &&
+			y <= SData::HEIGTH_CANVAS - SData::RADIUS_BALL - SData::THICKNESS_BORDER / 2.0))
+		
+			return ballEnd;*/
+
+		return new CPoint(x, y);
 	}
+
 private:
 	static SQuarter Quarter(float x0, float y0, float x, float y)
 	{
@@ -193,4 +320,141 @@ private:
 
 		return quarter;
 	};
+
+	static void CalculateBorderRepulsion(Ball* ball)
+	{
+		if (ball->X <= SData::THICKNESS_BORDER / 2.0)
+		{
+			if (ball->Start->Y <= ball->End->Y)
+			{
+				float y = ball->End->Y + (ball->End->Y - ball->Start->Y);
+
+				CPoint* buff = EndOfLine(ball->End, new CPoint(ball->Start->X, y), ball->End);
+
+				ball->Start = new CPoint(ball->End->X, ball->End->Y);
+				ball->End = buff;
+				return;
+			}
+			if (ball->Start->Y > ball->End->Y)
+			{
+				float y = ball->End->Y - (ball->Start->Y - ball->End->Y);
+
+				CPoint* buff = EndOfLine(ball->End, new CPoint(ball->Start->X, y), ball->End);
+
+				ball->Start = new CPoint(ball->End->X, ball->End->Y);
+				ball->End = buff;
+				return;
+			}
+		}
+
+		if (ball->X + SData::DIAMETER_BALL >= SData::WIDHT_CANVAS - SData::THICKNESS_BORDER / 2.0)
+		{
+			if (ball->Start->Y <= ball->End->Y)
+			{
+				float y = ball->End->Y + (ball->End->Y - ball->Start->Y);
+
+				CPoint* buff = EndOfLine(ball->End, new CPoint(ball->Start->X, y), ball->End);
+
+				ball->Start = new CPoint(ball->End->X, ball->End->Y);
+				ball->End = buff;
+				return;
+			}
+			if (ball->Start->Y > ball->End->Y)
+			{
+				float y = ball->End->Y - (ball->Start->Y - ball->End->Y);
+
+				CPoint* buff = EndOfLine(ball->End, new CPoint(ball->Start->X, y), ball->End);
+
+				ball->Start = new CPoint(ball->End->X, ball->End->Y);
+				ball->End = buff;
+				return;
+			}
+		}
+
+		if (ball->Y <= SData::THICKNESS_BORDER / 2.0)
+		{
+			if (ball->Start->X <= ball->End->X)
+			{
+				float x = ball->End->X + (ball->End->X - ball->Start->X);
+
+				CPoint* buff = EndOfLine(ball->End, new CPoint(x, ball->Start->Y), ball->End);
+
+				ball->Start = new CPoint(ball->End->X, ball->End->Y);
+				ball->End = buff;
+				return;
+			}
+			if (ball->Start->X > ball->End->X)
+			{
+				float x = ball->End->X - (ball->Start->X - ball->End->X);
+
+				CPoint* buff = EndOfLine(ball->End, new CPoint(x, ball->Start->Y), ball->End);
+
+				ball->Start = new CPoint(ball->End->X, ball->End->Y);
+				ball->End = buff;
+				return;
+			}
+		}
+
+		if (ball->Y + SData::DIAMETER_BALL >= SData::HEIGTH_CANVAS - SData::THICKNESS_BORDER / 2.0)
+		{
+			if (ball->Start->X <= ball->End->X)
+			{
+				float x = ball->End->X + (ball->End->X - ball->Start->X);
+
+				CPoint* buff = EndOfLine(ball->End, new CPoint(x, ball->Start->Y), ball->End);
+
+				ball->Start = new CPoint(ball->End->X, ball->End->Y);
+				ball->End = buff;
+				return;
+			}
+			if (ball->Start->X > ball->End->X)
+			{
+				float x = ball->End->X - (ball->Start->X - ball->End->X);
+
+				CPoint* buff = EndOfLine(ball->End, new CPoint(x, ball->Start->Y), ball->End);
+
+				ball->Start = new CPoint(ball->End->X, ball->End->Y);
+				ball->End = buff;
+				return;
+			}
+		}
+	}
+
+	static void CalculateBallRepulsion(array<Ball*>^ balls)
+	{
+		for (int i = 0; i < SData::BALLS_COUNT; ++i)
+		{
+			if (balls[i]->Speed > 0)
+				for (int j = 0; j < SData::BALLS_COUNT; ++j)
+				{
+					if (i != j)
+					{
+						float centerLength = std::sqrt((balls[i]->Center()->X - balls[j]->Center()->X) *
+							(balls[i]->Center()->X - balls[j]->Center()->X) +
+							(balls[i]->Center()->Y - balls[j]->Center()->Y) *
+							(balls[i]->Center()->Y - balls[j]->Center()->Y));
+
+						if (centerLength <= SData::DIAMETER_BALL)
+						{
+							// recalculate
+							// balls[j] find endpoint
+							CPoint* buff = EndOfLine(balls[i]->Center(), balls[j]->Center(), balls[j]->End);
+
+							balls[i]->End->X = 2 * balls[i]->Center()->X - balls[j]->Center()->X;
+							balls[i]->End->Y = 2 * balls[i]->Center()->Y - balls[j]->Center()->Y;
+							balls[i]->End = EndOfLine(balls[i]->Center(), balls[i]->End, balls[i]->End);
+
+							balls[j]->End = buff;
+								
+							balls[j]->Speed = balls[i]->Speed * SData::SOME();
+							balls[i]->Speed = balls[i]->Speed * SData::SOME();
+
+							// balls[i] find endpoint
+
+
+						}
+					}
+				}
+		}
+	}
 };

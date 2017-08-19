@@ -8,15 +8,19 @@ class Ball : public CPoint
 public:
 	gcroot<System::Drawing::Color> Color;
 	bool IsStriped;
-	CPoint* Center = new CPoint(X + SData::RADIUS_BALL, Y + SData::RADIUS_BALL);
-	CPoint* End; // must find
+	CPoint* Center() 
+	{ return new CPoint(X + SData::RADIUS_BALL, Y + SData::RADIUS_BALL); }
+	CPoint* End;
+	CPoint* Start;
 	float Speed;
+	float Length;
+	bool IsChecked;
 
 	Ball(CPoint point, bool isStrinped, System::Drawing::Color color) : CPoint(point.X, point.Y)
 	{
 		IsStriped = isStrinped;
 		Color = color;
-		//Center = new CPoint(point.X + SData::DIAMETER_BALL / 2, point.Y + SData::DIAMETER_BALL / 2);
 	}
-	Ball() {};
+
+	Ball() { };
 };

@@ -1,7 +1,7 @@
 #pragma once
 #include "CPoint.h"
+#include "SData.h"
 #include "Helper.h"
-#include "SQuarter.h"
 
 public class Cue
 {

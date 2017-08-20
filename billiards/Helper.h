@@ -1,6 +1,11 @@
 #pragma once
-#include "Cpoint.h"
+#include "CPoint.h"
+#include "Ball.h"
+#include "Game.h"
 #include "SQuarter.h"
+#include "HelperGame.h"
+
+#include <cmath>
 
 class Helper
 {
@@ -20,37 +25,47 @@ public:
 		return length * (SData::MAX_SPEED() - SData::MIN_SPEED()) / (SData::MAX_CUE_LENGTH - SData::START_CUE);
 	}
 	
-	static void ReCalculate(array<Ball*>^ balls)
+	static HelperGame* ReCalculate(array<Ball*>^ balls, HelperGame* helperGame)
 	{
-		for (int i = -0; i < SData::BALLS_COUNT; ++i)
-			if (balls[i]->End != nullptr && 
-				balls[i]->Speed > 0 && 
-				balls[i]->Length >= 0)
-			{
-				CPoint* buff = PointFromLength(balls[i]->Center()->X, balls[i]->Center()->Y, balls[i]->End->X, balls[i]->End->Y, balls[i]->Length);
-				
-				// In some cases, we get the result with "-nan(ind)"
-				// I don't know why it happens
-				// But the next line fix this error
-				if (!(buff->X != buff->X || buff->Y != buff->Y))
+		if (BallsStoped(balls) && !helperGame->IsProgress)
+		{
+			helperGame->IsProgress = true;
+		}
+		else
+		{
+			for (int i = 0; i < SData::BALLS_COUNT; ++i)
+				if (balls[i]->End != nullptr &&
+					balls[i]->Speed > 0 &&
+					balls[i]->Length >= 0 &&
+					balls[i]->IsVisible)
 				{
-					balls[i]->X = buff->X - SData::RADIUS_BALL;
-					balls[i]->Y = buff->Y - SData::RADIUS_BALL;
+					CPoint* buff = PointFromLength(balls[i]->Center()->X, balls[i]->Center()->Y, balls[i]->End->X, balls[i]->End->Y, balls[i]->Length);
 
-					balls[i]->Length = balls[i]->Speed;
-					balls[i]->Speed -= SData::DECELERATION();
+					// In some cases, we get the result with "-nan(ind)"
+					// I don't know why it happens
+					// But the next line fix this error
+					if (!(buff->X != buff->X || buff->Y != buff->Y))
+					{
+						balls[i]->X = buff->X - SData::RADIUS_BALL;
+						balls[i]->Y = buff->Y - SData::RADIUS_BALL;
 
-					// ball in hole
-					CalculateBallRepulsion(balls);
-					CalculateBorderRepulsion(balls[i]);
+						balls[i]->Length = balls[i]->Speed;
+						balls[i]->Speed -= SData::DECELERATION();
+
+						CheckBallsInHole(balls, helperGame);
+						CalculateBallRepulsion(balls);
+						CalculateBorderRepulsion(balls[i]);
+					}
 				}
-			}
-			else
-			{
-				balls[i]->Speed = 0;
-				balls[i]->Length = 0;
-				balls[i]->End = nullptr;
-			}
+				else
+				{
+					balls[i]->Speed = 0;
+					balls[i]->Length = 0;
+					balls[i]->End = nullptr;
+				}
+		}
+
+		return helperGame;
 	}
 
 	static CPoint* EndOfLine(CPoint* startPoint, CPoint* intermediatePoint, CPoint* ballEnd)
@@ -323,6 +338,9 @@ private:
 
 	static void CalculateBorderRepulsion(Ball* ball)
 	{
+		if (!ball->IsVisible)
+			return;
+
 		if (ball->X <= SData::THICKNESS_BORDER / 2.0)
 		{
 			if (ball->Start->Y <= ball->End->Y)
@@ -424,7 +442,7 @@ private:
 	{
 		for (int i = 0; i < SData::BALLS_COUNT; ++i)
 		{
-			if (balls[i]->Speed > 0)
+			if (balls[i]->Speed > 0 && balls[i]->IsVisible)
 				for (int j = 0; j < SData::BALLS_COUNT; ++j)
 				{
 					if (i != j)
@@ -456,5 +474,41 @@ private:
 					}
 				}
 		}
+	}
+
+	static void CheckBallsInHole(array<Ball*>^ balls, HelperGame* helperGame)
+	{
+		for (int i = 0; i < SData::BALLS_COUNT; ++i)
+			for (int j = 0; j < SData::HOLES_COUNT; ++j)
+				if (std::sqrt(
+					(balls[i]->Center()->X - SData::HOLES_CENTER()[j]->X) *
+					(balls[i]->Center()->X - SData::HOLES_CENTER()[j]->X) +
+					(balls[i]->Center()->Y - SData::HOLES_CENTER()[j]->Y) *
+					(balls[i]->Center()->Y - SData::HOLES_CENTER()[j]->Y)) <
+					10)
+				{
+					// check what it a ball
+					//
+					if (helperGame->IsProgress)
+					{
+						if (helperGame->Player1->IsProgress)
+							++helperGame->Player1->BallsCount;
+
+						if (helperGame->Player2->IsProgress)
+							++helperGame->Player2->BallsCount;
+
+						balls[i]->IsVisible = false;
+						balls[i]->Speed = 0;
+					}
+				}
+	}
+
+	static bool BallsStoped(array<Ball*>^ balls)
+	{
+		for (int i = 0; i < SData::BALLS_COUNT; ++i)
+			if (balls[i]->Speed > 0)
+				return false;
+
+		return true;
 	}
 };

@@ -1,10 +1,12 @@
 #pragma once
 #include "CPoint.h"
-#include "SDataBalls.h"
-#include "SData.h"
+#include "Ball.h"
 #include "Game.h"
+#include "SData.h"
 #include "Helper.h"
-#include "SQuarter.h"
+#include "SDataBalls.h"
+
+#include "HelperGame.h"
 
 #include "cstdlib"
 #include "algorithm"
@@ -49,12 +51,12 @@ private: System::Windows::Forms::PictureBox^  pictureBox;
 
 private: Bitmap^ image;
 private: Bitmap^ imageHelper;
-private: Bitmap^ imageOriginal;
 private: System::Threading::Thread^ gameThread;
-private: Game^ game;
+private: Game* game;
 private: SDataBalls^ ballsData;
-private: System::Windows::Forms::TextBox^  textBox1;
-private: System::Windows::Forms::TextBox^  textBox2;
+private: System::Windows::Forms::Label^  label1;
+
+
 
 private:
 	/// <summary>
@@ -71,8 +73,7 @@ private:
 	{
 		this->buttonNewGame = (gcnew System::Windows::Forms::Button());
 		this->pictureBox = (gcnew System::Windows::Forms::PictureBox());
-		this->textBox1 = (gcnew System::Windows::Forms::TextBox());
-		this->textBox2 = (gcnew System::Windows::Forms::TextBox());
+		this->label1 = (gcnew System::Windows::Forms::Label());
 		(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBox))->BeginInit();
 		this->SuspendLayout();
 		// 
@@ -100,27 +101,21 @@ private:
 		this->pictureBox->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::pictureBox_MouseMove);
 		this->pictureBox->MouseUp += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::pictureBox_MouseUp);
 		// 
-		// textBox1
+		// label1
 		// 
-		this->textBox1->Location = System::Drawing::Point(221, 13);
-		this->textBox1->Name = L"textBox1";
-		this->textBox1->Size = System::Drawing::Size(100, 20);
-		this->textBox1->TabIndex = 2;
-		// 
-		// textBox2
-		// 
-		this->textBox2->Location = System::Drawing::Point(363, 12);
-		this->textBox2->Name = L"textBox2";
-		this->textBox2->Size = System::Drawing::Size(100, 20);
-		this->textBox2->TabIndex = 3;
+		this->label1->AutoSize = true;
+		this->label1->Location = System::Drawing::Point(126, 18);
+		this->label1->Name = L"label1";
+		this->label1->Size = System::Drawing::Size(116, 13);
+		this->label1->TabIndex = 2;
+		this->label1->Text = L"Player1: 0 --- Player2: 0";
 		// 
 		// MainForm
 		// 
 		this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 		this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 		this->ClientSize = System::Drawing::Size(725, 455);
-		this->Controls->Add(this->textBox2);
-		this->Controls->Add(this->textBox1);
+		this->Controls->Add(this->label1);
 		this->Controls->Add(this->pictureBox);
 		this->Controls->Add(this->buttonNewGame);
 		this->Name = L"MainForm";
@@ -143,17 +138,20 @@ private: System::Void MainForm_Load(System::Object^  sender, System::EventArgs^ 
 }
 private: System::Void pictureBox_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) 
 {
-	e->Graphics->DrawImage(image, 0, 0, image->Width, image->Height);
+	//e->Graphics->DrawImage(image, 0, 0, image->Width, image->Height);
+	e->Graphics->DrawImage(image, 0, 0);
+
 }
 private: System::Void buttonNewGame_Click(System::Object^  sender, System::EventArgs^  e)
 {
+	label1->Text = "Player1: 0 --- Player2: 0";
 	image = gcnew Bitmap(
 		pictureBox->ClientSize.Width,
 		pictureBox->ClientSize.Height,
 		System::Drawing::Imaging::PixelFormat::Format32bppArgb);
 
 	ballsData = gcnew SDataBalls();
-	game = gcnew Game();
+	game = new Game();
 	DrawHolesAndBorders();
 
 	if (gameThread != nullptr)
@@ -174,45 +172,77 @@ private: System::Void GameCycle()
 {
 	while (game->IsGame)
 	{
-		Render();	
-		Helper::ReCalculate(ballsData->Balls);
+		Render();
+
+		HelperGame* buff = new HelperGame();
+		buff->Player1->IsProgress = game->Player1->IsProgress;
+		buff->Player1->BallsCount = game->Player1->BallsCount;
+		buff->Player2->IsProgress = game->Player2->IsProgress;
+		buff->Player2->BallsCount = game->Player2->BallsCount;
+		buff->IsProgress = game->IsProgress;
+
+		buff = Helper::ReCalculate(ballsData->Balls, buff);
+
+		game->Player1->IsProgress = buff->Player1->IsProgress;
+		game->Player1->BallsCount = buff->Player1->BallsCount;
+		game->Player2->IsProgress = buff->Player2->IsProgress;
+		game->Player2->BallsCount = buff->Player2->BallsCount;
+		game->IsProgress = buff->IsProgress;
+
+		label1->Invoke(gcnew Action<int>(this, &MainForm::Info), 0);
 
 		System::Threading::Thread::Sleep(5);
 	}
 }
+private: System::Void Info(int value) 
+{
+	label1->Text = "Player1: " + game->Player1->BallsCount.ToString() + " --- " + "Player2: " + game->Player2->BallsCount.ToString();
+}
 private: System::Void Render()
 {
-	Bitmap^ imageBase = gcnew Bitmap(imageHelper);
+	Bitmap^ imageBase;
+	try { imageBase = gcnew Bitmap(imageHelper); }
+	catch(Exception^ e) { return; }
+
+	//Bitmap^ imageBase = gcnew Bitmap(imageHelper);
 	Graphics^ graphics = Graphics::FromImage(imageBase);
 
 	for (int i = 0; i < SData::BALLS_COUNT; ++i)
 	{
-		if (ballsData->Balls[i]->IsStriped)
-			graphics->FillEllipse(
-				gcnew HatchBrush(HatchStyle::Horizontal, SData::STRIP_COLOR(), ballsData->Balls[i]->Color),
-				ballsData->Balls[i]->X,
-				ballsData->Balls[i]->Y,
-				(float)SData::DIAMETER_BALL,
-				(float)SData::DIAMETER_BALL);
-		else
-			graphics->FillEllipse(
-				gcnew SolidBrush(ballsData->Balls[i]->Color),
-				ballsData->Balls[i]->X,
-				ballsData->Balls[i]->Y,
-				(float)SData::DIAMETER_BALL,
-				(float)SData::DIAMETER_BALL);
+		if (ballsData->Balls[i]->IsVisible)
+		{
+			if (ballsData->Balls[i]->IsStriped)
+				graphics->FillEllipse(
+					gcnew HatchBrush(HatchStyle::Horizontal, SData::STRIP_COLOR(), ballsData->Balls[i]->Color),
+					ballsData->Balls[i]->X,
+					ballsData->Balls[i]->Y,
+					(float)SData::DIAMETER_BALL,
+					(float)SData::DIAMETER_BALL);
+			else
+				graphics->FillEllipse(
+					gcnew SolidBrush(ballsData->Balls[i]->Color),
+					ballsData->Balls[i]->X,
+					ballsData->Balls[i]->Y,
+					(float)SData::DIAMETER_BALL,
+					(float)SData::DIAMETER_BALL);
+		}
 	}
 
-	if (game->IsProgress && game->Cue != NULL)
+	if (game->IsProgress && game->Cue != nullptr)
 	{
 		Pen^ penCue = gcnew Pen(System::Drawing::Color::Brown, 5);
 
-		graphics->DrawLine(penCue, game->Cue->CueStart->X, game->Cue->CueStart->Y, 
+		graphics->DrawLine(penCue, game->Cue->CueStart->X, game->Cue->CueStart->Y,
 			game->Cue->CueEnd->X, game->Cue->CueEnd->Y);
 	}
 
+	delete image;
+
+	image = gcnew Bitmap(imageBase);
 	pictureBox->Invalidate();
-	image = imageBase;
+
+	delete graphics;
+	delete imageBase;
 }
 private: System::Void DrawHolesAndBorders()
 {
@@ -225,16 +255,14 @@ private: System::Void DrawHolesAndBorders()
 	graphics->DrawLine(penBorder, SData::WIDHT_CANVAS, 0, SData::WIDHT_CANVAS, SData::HEIGTH_CANVAS);
 	// Draw holes
 	Brush^ brush = gcnew SolidBrush(System::Drawing::Color::FromArgb(47, 79, 79));
-	graphics->FillEllipse(brush, 5, 5, SData::DIAMETER_HOLE, SData::DIAMETER_HOLE);
-	graphics->FillEllipse(brush, 325, 5, SData::DIAMETER_HOLE, SData::DIAMETER_HOLE);
-	graphics->FillEllipse(brush, 655, 5, SData::DIAMETER_HOLE, SData::DIAMETER_HOLE);
 
-	graphics->FillEllipse(brush, 5, 355, SData::DIAMETER_HOLE, SData::DIAMETER_HOLE);
-	graphics->FillEllipse(brush, 325, 355, SData::DIAMETER_HOLE, SData::DIAMETER_HOLE);
-	graphics->FillEllipse(brush, 655, 355, SData::DIAMETER_HOLE, SData::DIAMETER_HOLE);
+	for (int i = 0; i < SData::HOLES_COUNT; ++i)
+		graphics->FillEllipse(brush, SData::HOLES()[i]->X, SData::HOLES()[i]->Y, (float)SData::DIAMETER_HOLE, (float)SData::DIAMETER_HOLE);
 
-	pictureBox->Invalidate();
 	imageHelper = gcnew Bitmap(image);
+	pictureBox->Invalidate();
+
+	delete graphics;
 }
 private: System::Void MainForm_FormClosing(System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e) {
 	if (game != nullptr)

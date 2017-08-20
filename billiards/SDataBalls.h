@@ -17,7 +17,7 @@ public:
 		Balls[0]->Speed = 0;
 		Balls[0]->End = nullptr;
 		Balls[0]->Length = 0;
-		Balls[0]->IsChecked = false;
+		Balls[0]->IsVisible = true;
 
 		array<CPoint*>^ _points = MixCoordinates();
 		array<System::Drawing::Color>^ colors = Colors();
@@ -30,7 +30,7 @@ public:
 			Balls[i + 1]->End = nullptr;
 			Balls[i + 1]->Length = 0;
 			Balls[i + 1]->Start = new CPoint(*_points[i]);
-			Balls[i + 1]->IsChecked = false;
+			Balls[i + 1]->IsVisible = true;
 		}
 	};
 

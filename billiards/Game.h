@@ -1,7 +1,8 @@
 #pragma once
 #include "Cue.h"
+#include "Player.h"
 
-public ref class Game
+class Game
 {
 public: 
 	bool IsGame;
@@ -11,10 +12,23 @@ public:
 	CPoint* PointOnCue;
 	float LengthForSpeed;
 
+	Player* Player1;
+	Player* Player2;
+
+	//Game() {};
+
 	Game()
 	{
 		IsGame = true;
 		IsProgress = false;
 		IsCuePressed = false;
+		Cue = nullptr;
+
+		Player1 = new Player();
+		Player2 = new Player();
+		Player1->BallsCount = 0;
+		Player2->BallsCount = 0;
+		Player1->IsProgress = true;
+		Player2->IsProgress = false;
 	}
 };

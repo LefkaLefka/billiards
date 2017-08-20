@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include "CPoint.h"
 #include "SData.h"
 #include "vcclr.h"
 
@@ -14,7 +13,7 @@ public:
 	CPoint* Start;
 	float Speed;
 	float Length;
-	bool IsChecked;
+	bool IsVisible;
 
 	Ball(CPoint point, bool isStrinped, System::Drawing::Color color) : CPoint(point.X, point.Y)
 	{

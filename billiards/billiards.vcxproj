@@ -140,6 +140,8 @@
     <ClInclude Include="Cue.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Helper.h" />
+    <ClInclude Include="HelperGame.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="SQuarter.h" />
     <ClInclude Include="SDataBalls.h" />
     <ClInclude Include="MainForm.h">

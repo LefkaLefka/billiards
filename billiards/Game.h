@@ -12,6 +12,9 @@ public:
 	CPoint* PointOnCue;
 	float LengthForSpeed;
 
+	bool SetWhiteBall;
+	bool IsBlack;
+
 	Player* Player1;
 	Player* Player2;
 
@@ -23,6 +26,9 @@ public:
 		IsProgress = false;
 		IsCuePressed = false;
 		Cue = nullptr;
+
+		IsBlack = false;
+		SetWhiteBall = false;
 
 		Player1 = new Player();
 		Player2 = new Player();

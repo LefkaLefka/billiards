@@ -24,8 +24,8 @@ public:
 	static const float MIN_SPEED()
 	{ return 0.1; }
 	static const float MAX_SPEED()
-	{ return 7; }
-	static const float SOME()
+	{ return 6; }
+	static const float SPEED_TRANSFER()
 	{ return 0.9977; }
 
 	static const System::Drawing::Color STRIP_COLOR()

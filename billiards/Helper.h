@@ -56,6 +56,10 @@ public:
 						CalculateBallRepulsion(balls);
 						CalculateBorderRepulsion(balls[i]);
 					}
+					else
+					{
+						balls[i]->Speed = 0;
+					}
 				}
 				else
 				{
@@ -445,31 +449,28 @@ private:
 			if (balls[i]->Speed > 0 && balls[i]->IsVisible)
 				for (int j = 0; j < SData::BALLS_COUNT; ++j)
 				{
-					if (i != j)
+					if (i != j && balls[i]->IsVisible)
 					{
-						float centerLength = std::sqrt((balls[i]->Center()->X - balls[j]->Center()->X) *
-							(balls[i]->Center()->X - balls[j]->Center()->X) +
-							(balls[i]->Center()->Y - balls[j]->Center()->Y) *
-							(balls[i]->Center()->Y - balls[j]->Center()->Y));
-
-						if (centerLength <= SData::DIAMETER_BALL)
+						if (balls[j]->IsVisible)
 						{
-							// recalculate
-							// balls[j] find endpoint
-							CPoint* buff = EndOfLine(balls[i]->Center(), balls[j]->Center(), balls[j]->End);
+							float centerLength = std::sqrt((balls[i]->Center()->X - balls[j]->Center()->X) *
+								(balls[i]->Center()->X - balls[j]->Center()->X) +
+								(balls[i]->Center()->Y - balls[j]->Center()->Y) *
+								(balls[i]->Center()->Y - balls[j]->Center()->Y));
 
-							balls[i]->End->X = 2 * balls[i]->Center()->X - balls[j]->Center()->X;
-							balls[i]->End->Y = 2 * balls[i]->Center()->Y - balls[j]->Center()->Y;
-							balls[i]->End = EndOfLine(balls[i]->Center(), balls[i]->End, balls[i]->End);
+							if (centerLength <= SData::DIAMETER_BALL)
+							{
+								CPoint* buff = EndOfLine(balls[i]->Center(), balls[j]->Center(), balls[j]->End);
 
-							balls[j]->End = buff;
-								
-							balls[j]->Speed = balls[i]->Speed * SData::SOME();
-							balls[i]->Speed = balls[i]->Speed * SData::SOME();
+								balls[i]->End->X = 2 * balls[i]->Center()->X - balls[j]->Center()->X;
+								balls[i]->End->Y = 2 * balls[i]->Center()->Y - balls[j]->Center()->Y;
+								balls[i]->End = EndOfLine(balls[i]->Center(), balls[i]->End, balls[i]->End);
 
-							// balls[i] find endpoint
+								balls[j]->End = buff;
 
-
+								balls[j]->Speed = balls[i]->Speed * SData::SPEED_TRANSFER();
+								balls[i]->Speed = balls[i]->Speed * SData::SPEED_TRANSFER();
+							}
 						}
 					}
 				}
@@ -478,29 +479,44 @@ private:
 
 	static void CheckBallsInHole(array<Ball*>^ balls, HelperGame* helperGame)
 	{
+		array<CPoint*>^ HOLES_CENTER = SData::HOLES_CENTER();
+
 		for (int i = 0; i < SData::BALLS_COUNT; ++i)
 			for (int j = 0; j < SData::HOLES_COUNT; ++j)
-				if (std::sqrt(
-					(balls[i]->Center()->X - SData::HOLES_CENTER()[j]->X) *
-					(balls[i]->Center()->X - SData::HOLES_CENTER()[j]->X) +
-					(balls[i]->Center()->Y - SData::HOLES_CENTER()[j]->Y) *
-					(balls[i]->Center()->Y - SData::HOLES_CENTER()[j]->Y)) <
-					10)
-				{
-					// check what it a ball
-					//
-					if (helperGame->IsProgress)
+				if (balls[i]->IsVisible)
+					if (std::sqrt(
+						(balls[i]->Center()->X - HOLES_CENTER[j]->X) *
+						(balls[i]->Center()->X - HOLES_CENTER[j]->X) +
+						(balls[i]->Center()->Y - HOLES_CENTER[j]->Y) *
+						(balls[i]->Center()->Y - HOLES_CENTER[j]->Y)) <
+						SData::RADIUS_BALL + 5)
 					{
-						if (helperGame->Player1->IsProgress)
-							++helperGame->Player1->BallsCount;
+						// check what it a ball
+						//
+						if (balls[i]->Color == System::Drawing::Color::Black)
+						{
+							helperGame->IsBlack = true;
+							helperGame->IsProgress = true;
+						}
 
-						if (helperGame->Player2->IsProgress)
-							++helperGame->Player2->BallsCount;
+						if (balls[i]->Color == System::Drawing::Color::White)
+						{
+							helperGame->SetWhiteBall = true;
+							helperGame->IsProgress = true;
+						}
 
-						balls[i]->IsVisible = false;
-						balls[i]->Speed = 0;
+						if (!helperGame->IsProgress)
+						{
+							if (helperGame->Player1->IsProgress)
+								++helperGame->Player1->BallsCount;
+
+							if (helperGame->Player2->IsProgress)
+								++helperGame->Player2->BallsCount;
+
+							balls[i]->IsVisible = false;
+							balls[i]->Speed = 0;
+						}
 					}
-				}
 	}
 
 	static bool BallsStoped(array<Ball*>^ balls)

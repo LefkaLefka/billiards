@@ -5,7 +5,6 @@
 #include "SData.h"
 #include "Helper.h"
 #include "SDataBalls.h"
-
 #include "HelperGame.h"
 
 #include "cstdlib"
@@ -96,7 +95,6 @@ private:
 		this->pictureBox->Size = System::Drawing::Size(700, 400);
 		this->pictureBox->TabIndex = 1;
 		this->pictureBox->TabStop = false;
-		this->pictureBox->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &MainForm::pictureBox_Paint);
 		this->pictureBox->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::pictureBox_MouseDown);
 		this->pictureBox->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::pictureBox_MouseMove);
 		this->pictureBox->MouseUp += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::pictureBox_MouseUp);
@@ -139,7 +137,7 @@ private: System::Void MainForm_Load(System::Object^  sender, System::EventArgs^ 
 private: System::Void pictureBox_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) 
 {
 	//e->Graphics->DrawImage(image, 0, 0, image->Width, image->Height);
-	e->Graphics->DrawImage(image, 0, 0);
+	//e->Graphics->DrawImage(image, 0, 0);
 
 }
 private: System::Void buttonNewGame_Click(System::Object^  sender, System::EventArgs^  e)
@@ -190,7 +188,7 @@ private: System::Void GameCycle()
 		game->IsProgress = buff->IsProgress;
 
 		label1->Invoke(gcnew Action<int>(this, &MainForm::Info), 0);
-
+		
 		System::Threading::Thread::Sleep(5);
 	}
 }
@@ -202,7 +200,7 @@ private: System::Void Render()
 {
 	Bitmap^ imageBase;
 	try { imageBase = gcnew Bitmap(imageHelper); }
-	catch(Exception^ e) { return; }
+	catch (Exception^ e) { return; }
 
 	//Bitmap^ imageBase = gcnew Bitmap(imageHelper);
 	Graphics^ graphics = Graphics::FromImage(imageBase);
@@ -236,9 +234,8 @@ private: System::Void Render()
 			game->Cue->CueEnd->X, game->Cue->CueEnd->Y);
 	}
 
-	delete image;
-
 	image = gcnew Bitmap(imageBase);
+	pictureBox->Image = gcnew Bitmap(image);
 	pictureBox->Invalidate();
 
 	delete graphics;
@@ -260,9 +257,12 @@ private: System::Void DrawHolesAndBorders()
 		graphics->FillEllipse(brush, SData::HOLES()[i]->X, SData::HOLES()[i]->Y, (float)SData::DIAMETER_HOLE, (float)SData::DIAMETER_HOLE);
 
 	imageHelper = gcnew Bitmap(image);
-	pictureBox->Invalidate();
+	pictureBox->Image = gcnew Bitmap(image);
 
 	delete graphics;
+	delete brush;
+	delete penBorder;
+	delete image;
 }
 private: System::Void MainForm_FormClosing(System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e) {
 	if (game != nullptr)
